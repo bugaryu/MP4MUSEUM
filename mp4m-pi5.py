@@ -9,7 +9,7 @@
 #   - Set WAYLAND_DISPLAY and XDG_RUNTIME_DIR env vars for headless Wayland session
 #   - Reuse single MediaPlayer across all files to avoid window flash on transitions
 
-import time, vlc, os, glob, logging, signal, sys
+import time, vlc, os, glob, logging, signal, sys, atexit
 
 PLAYLIST_DIR = '/home/mon/playlist'
 LOG_FILE = '/home/mon/vlc.log'
@@ -21,12 +21,17 @@ logging.basicConfig(
     format='%(asctime)s %(message)s',
 )
 
-def _cleanup(signum, frame):
+def _remove_pid():
     try:
         os.remove(PID_FILE)
     except OSError:
         pass
-    sys.exit(0)
+
+# atexit handles PID removal on any exit (normal, exception, signal via sys.exit)
+atexit.register(_remove_pid)
+
+def _cleanup(*_):
+    sys.exit(0)  # triggers atexit
 
 signal.signal(signal.SIGTERM, _cleanup)
 signal.signal(signal.SIGINT, _cleanup)
