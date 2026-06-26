@@ -43,6 +43,7 @@ instance = vlc.Instance(
     '--no-osd', '-q',
     '--vout', 'wl_dmabuf',
     '--codec', 'avcodec',
+    '--image-duration', '10',
 )
 
 # Single player reused for all files — window stays open, no flash on file transitions.
@@ -51,14 +52,20 @@ instance = vlc.Instance(
 player = instance.media_player_new()
 player.set_fullscreen(True)
 
+IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff'}
+
 logging.info(f'mp4m-pi5.py started on {os.uname().nodename}')
 
 while True:
     files = sorted(glob.glob(f'{PLAYLIST_DIR}/*.*'))
-    if not files:
-        time.sleep(5)
-        continue
+    played_any = False
     for f in files:
+        ext = os.path.splitext(f)[1].lower()
+        if ext in IMAGE_EXTS:
+            # wl_dmabuf cannot display raw image frames; convert to HEVC first
+            logging.warning(f'Skipped (convert to HEVC first): {os.path.basename(f)}')
+            continue
+        played_any = True
         logging.info(f'Playing: {os.path.basename(f)}')
         media = instance.media_new(f)
         player.set_media(media)
@@ -67,3 +74,5 @@ while True:
         while player.get_state() in (vlc.State.Playing, vlc.State.Buffering, vlc.State.Opening):
             time.sleep(0.05)
         media.release()
+    if not played_any:
+        time.sleep(5)
