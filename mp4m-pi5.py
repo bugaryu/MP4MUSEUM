@@ -8,16 +8,30 @@
 #   - Changed media path from /media/*/ to /home/mon/playlist/
 #   - Set WAYLAND_DISPLAY and XDG_RUNTIME_DIR env vars for headless Wayland session
 
-import time, vlc, os, glob, logging
+import time, vlc, os, glob, logging, signal, sys
 
 PLAYLIST_DIR = '/home/mon/playlist'
 LOG_FILE = '/home/mon/vlc.log'
+PID_FILE = '/home/mon/mp4m-pi5.pid'
 
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
     format='%(asctime)s %(message)s',
 )
+
+def _cleanup(signum, frame):
+    try:
+        os.remove(PID_FILE)
+    except OSError:
+        pass
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, _cleanup)
+signal.signal(signal.SIGINT, _cleanup)
+
+with open(PID_FILE, 'w') as f:
+    f.write(str(os.getpid()))
 
 # Wayland session vars (same as vlc_play_list.sh in parent project)
 os.environ.setdefault('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')
@@ -41,6 +55,8 @@ def vlc_play(source):
     player.set_media(media)
     player.play()
     time.sleep(1)
+    # Instance --fullscreen alone is insufficient with python-vlc; must call explicitly
+    player.set_fullscreen(True)
     current_state = player.get_state()
     while current_state in (vlc.State.Playing, vlc.State.Buffering, vlc.State.Opening):
         time.sleep(0.05)
