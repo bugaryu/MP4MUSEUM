@@ -44,8 +44,11 @@ os.environ.setdefault('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')
 os.environ.setdefault('WAYLAND_DISPLAY', 'wayland-0')
 
 # VLC instance with Pi 5 / Wayland options
+#   （'-q' は付けない: 完全silentだと音声出力(aout)のエラーまで消えてしまい、
+#    「映像は流れるが音声だけ死ぬ」障害の原因が vlc.log から追えなくなる。
+#    デフォルトverbosity(未指定)はエラーのみを出すため、ノイズは最小限に抑えられる）
 instance = vlc.Instance(
-    '--no-osd', '-q',
+    '--no-osd',
     '--vout', 'wl_dmabuf',
     '--codec', 'avcodec',
     '--image-duration', '10',
