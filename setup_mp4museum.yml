@@ -4,7 +4,7 @@
 #   ansible-playbook mp4museum/setup_mp4museum.yml                    # 全台
 
 - name: mp4museum Pi 5 プレイヤーセットアップ
-  hosts: players:players_wall
+  hosts: players
   gather_facts: no
 
   tasks:
